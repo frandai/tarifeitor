@@ -24,7 +24,7 @@ const msgs = [
   ],
   [
     "¡Deja de planchar o Endesa te envía una estaca con la factura!",
-    "La hora favorita de los dueños de Iberdrola: ",
+    "La hora favorita de los dueños de Iberdrola:",
     "No está la factura para farolillos:",
   ],
 ];
