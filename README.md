@@ -34,3 +34,7 @@ Also in Cloudant I need a **tarifeitorbot** DB with **next:nextUpdate** and **ne
 Leave me a ⭐ or propose changes using Issues!
 
 Find me on Telegram: [@TarifeitorBot](http://t.me/tarifeitorbot)
+
+# Selfie
+
+![Logo](logo.png?raw=true "Logo")
