@@ -59,11 +59,11 @@ const removeChat = async (chatId) => {
   } catch {}
 };
 
+let sentMsg = Math.floor(Math.random() * 100000);
+
 const randomMsg = (rate) => {
   const items = msgs[rate];
-  return (
-    items[Math.floor(Math.random() * items.length)] + " " + rateMessage[rate]
-  );
+  return items[++sentMsg % items.length] + " " + rateMessage[rate];
 };
 
 const currentHourFn = () => {
@@ -124,71 +124,44 @@ const sendMessageToChat = (token, chat_id, text) => {
   });
 };
 
-const processActions = async (token, offset) => {
-  try {
-    const queryParams = {
-      allowed_updates: '["message"]',
-    };
-    if (offset) {
-      queryParams.offset = offset;
+const processAction = async (msg, token) => {
+  if (msg && msg.text) {
+    if (msg.text.includes("/start")) {
+      await sendMessageToChat(token, msg.chat.id, startMessage);
+    } else if (msg.text.includes("/ahoraluz")) {
+      await sendMessageToChat(token, msg.chat.id, randomMsg(currentRate()));
+    } else if (msg.text.includes("/activaluz")) {
+      await addChat(msg.chat.id);
+      await sendMessageToChat(token, msg.chat.id, activateMessage);
+    } else if (msg.text.includes("/desactivaluz")) {
+      await removeChat(msg.chat.id);
+      await sendMessageToChat(token, msg.chat.id, deactivateMessage);
     }
-    await request({
-      json: true,
-      method: "GET",
-      url:
-        "https://api.telegram.org/bot" +
-        token +
-        "/getUpdates?" +
-        new URLSearchParams(queryParams),
-      followRedirect: true,
-    }).then(async (data) => {
-      await data.result.map(async (update) => {
-        const msg = update.message;
-        if (msg && msg.text) {
-          if (msg.text.includes("/start")) {
-            await sendMessageToChat(token, msg.chat.id, startMessage);
-          } else if (msg.text.includes("/ahoraluz")) {
-            await sendMessageToChat(
-              token,
-              msg.chat.id,
-              randomMsg(currentRate())
-            );
-          } else if (msg.text.includes("/activaluz")) {
-            await addChat(msg.chat.id);
-            await sendMessageToChat(token, msg.chat.id, activateMessage);
-          } else if (msg.text.includes("/desactivaluz")) {
-            await removeChat(msg.chat.id);
-            await sendMessageToChat(token, msg.chat.id, deactivateMessage);
-          }
-        }
-      });
-      if (data.result.length > 0) {
-        const dr = data.result;
-        const nextUpdate = dr[dr.length - 1].update_id + 1;
-        await cclient.insert(
-          { nextUpdate, _rev: (await cclient.get("next:nextUpdate"))._rev },
-          "next:nextUpdate"
-        );
-        await processActions(token, nextUpdate);
-      }
-    });
-  } catch {}
+  }
 };
 
 async function main(params) {
+  if (params.intoken !== params.webhookToken) {
+    return;
+  }
+
   if (!cclient) {
     await initCloudant(params.c_url, params.c_apikey);
   }
 
-  const offset = (await cclient.get("next:nextUpdate")).nextUpdate;
-
-  await processActions(params.token, offset);
+  if (params.message) {
+    await processAction(params.message, params.token);
+  }
 
   const lastRate = (await cclient.get("next:lastRate")).lastRate;
 
   const currentR = currentRate();
 
   if (lastRate !== currentR) {
+    await cclient.insert(
+      { lastRate: currentR, _rev: (await cclient.get("next:lastRate"))._rev },
+      "next:lastRate"
+    );
     for (let i = 0; i < 10; i++) {
       await (
         await cclient.partitionedList("chatid" + i, { include_docs: true })
@@ -200,11 +173,7 @@ async function main(params) {
         )
       );
     }
-    await cclient.insert(
-      { lastRate: currentR, _rev: (await cclient.get("next:lastRate"))._rev },
-      "next:lastRate"
-    );
   }
 
-  return { ok: true };
+  return { body: { ok: true } };
 }
