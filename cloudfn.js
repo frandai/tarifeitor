@@ -16,16 +16,25 @@ const msgs = [
     "Dale caña al horno, la lavadora y la secadora.",
     "Buena hora para poner lavadoras desde que tu novia se compró el satisfyer.",
     "Puedes darle a la luz y contemplar el orco que te has traído de la calle.",
+    "Ole, ole y ole los caracoles",
+    "Si estabas pensando en poner la lavadora mientras haces un pollo asado y lees a oscuras con el aire acondicionado puesto, este es el momento",
+    "El KWh está por los suelos, como tu autoestima"
   ],
   [
     "Cuidadín, que te va a costar carete.",
     "Desenchufa el vibrador, mejor te la agarras con la mano.",
     "No es buena hora para el aire acondicionado, mejor te abanicas la seta con la mano.",
+    "Si estas leyendo más te vale usar la luz de fuera y quedarte ciego",
+    "El KWh empieza a baja, Wallstreetwolverine te dice que holdees el interruptor apagado",
+    "Eh, eh, que baja que baja",
   ],
   [
     "¡Deja de planchar o Endesa te envía una estaca con la factura!",
     "La hora favorita de los dueños de Iberdrola:",
     "No está la factura para farolillos:",
+    "Yo que tú apagaba todo, a no ser que seas Amancio Ortega",
+    "Hora de apagar las luces y encender las velas",
+    "Sube el KWh tu cuenta bancaria baja",
   ],
 ];
 
