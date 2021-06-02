@@ -34,7 +34,7 @@ const msgs = [
     "No está la factura para farolillos:",
     "Yo que tú apagaba todo, a no ser que seas Amancio Ortega",
     "Hora de apagar las luces y encender las velas",
-    "Sube el KWh tu cuenta bancaria baja",
+    "Sube el KWh, tu cuenta bancaria baja",
   ],
 ];
 
