@@ -11,6 +11,15 @@ const initCloudant = async (url, apikey) => {
   cclient = cclient.use("tarifeitorbot");
 };
 
+
+const useCclient = async() => {
+  if (!cclient) {
+    await initCloudant(params.c_url, params.c_apikey);
+  }
+
+  return cclient;
+}
+
 const msgs = [
   [
     "Dale caña al horno, la lavadora y la secadora.",
@@ -56,16 +65,16 @@ const deactivateMessage =
 
 const addChat = async (chatId) => {
   try {
-    await cclient.insert({}, "chatid" + Math.abs(chatId % 10) + ":" + chatId);
+    await (await useCclient()).insert({}, "chatid" + Math.abs(chatId % 10) + ":" + chatId);
   } catch {}
 };
 
 const removeChat = async (chatId) => {
   try {
-    await cclient.destroy(
+    await (await useCclient()).destroy(
       "chatid" + Math.abs(chatId % 10) + ":" + chatId,
       (
-        await cclient.get("chatid" + Math.abs(chatId % 10) + ":" + chatId)
+        await (await useCclient()).get("chatid" + Math.abs(chatId % 10) + ":" + chatId)
       )._rev
     );
   } catch {}
@@ -121,7 +130,7 @@ const currentRate = () => {
 };
 
 const sendMessageToChat = (token, chat_id, text) => {
-  request({
+  return request({
     json: true,
     method: "GET",
     url:
@@ -157,33 +166,32 @@ async function main(params) {
     return;
   }
 
-  if (!cclient) {
-    await initCloudant(params.c_url, params.c_apikey);
-  }
-
   if (params.message) {
     await processAction(params.message, params.token);
-  }
+  } else {
+    const lastRate = (await (await useCclient()).get("next:lastRate")).lastRate;
 
-  const lastRate = (await cclient.get("next:lastRate")).lastRate;
+    const currentR = currentRate();
 
-  const currentR = currentRate();
-
-  if (lastRate !== currentR) {
-    await cclient.insert(
-      { lastRate: currentR, _rev: (await cclient.get("next:lastRate"))._rev },
-      "next:lastRate"
-    );
-    for (let i = 0; i < 10; i++) {
-      await (
-        await cclient.partitionedList("chatid" + i, { include_docs: true })
-      ).rows.map((row) =>
-        sendMessageToChat(
-          params.token,
-          row.id.split(":")[1],
-          randomMsg(currentR)
-        )
+    if (lastRate !== currentR) {
+      await (await useCclient()).insert(
+        { lastRate: currentR, _rev: (await (await useCclient()).get("next:lastRate"))._rev },
+        "next:lastRate"
       );
+      for (let i = 0; i < 10; i++) {
+        await Promise.all(
+          (
+            await (await useCclient()).partitionedList("chatid" + i, { include_docs: true })
+          ).rows.map(
+            async (row) =>
+              await sendMessageToChat(
+                params.token,
+                row.id.split(":")[1],
+                randomMsg(currentR)
+              )
+          )
+        );
+      }
     }
   }
 
