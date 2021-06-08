@@ -30,6 +30,7 @@ const msgs = [
     "Si estabas pensando en poner la lavadora mientras haces un pollo asado, y lees con luces de xeon con el aire acondicionado puesto, este es el momento.",
     "El KWh está por los suelos, como tu autoestima.",
     "F para el KWh porque:",
+    "Ya puedes enchufar el soporte vital de la abuela.",
   ],
   [
     "Cuidadín, que te va a costar carete.",
