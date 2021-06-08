@@ -3,6 +3,8 @@ var Cloudant = require("@cloudant/cloudant");
 
 let cclient;
 
+let gparams;
+
 const initCloudant = async (url, apikey) => {
   cclient = Cloudant({
     url: url,
@@ -11,14 +13,13 @@ const initCloudant = async (url, apikey) => {
   cclient = cclient.use("tarifeitorbot");
 };
 
-
-const useCclient = async() => {
+const useCclient = async () => {
   if (!cclient) {
-    await initCloudant(params.c_url, params.c_apikey);
+    await initCloudant(gparams.c_url, gparams.c_apikey);
   }
 
   return cclient;
-}
+};
 
 const msgs = [
   [
@@ -65,16 +66,22 @@ const deactivateMessage =
 
 const addChat = async (chatId) => {
   try {
-    await (await useCclient()).insert({}, "chatid" + Math.abs(chatId % 10) + ":" + chatId);
+    await (
+      await useCclient()
+    ).insert({}, "chatid" + Math.abs(chatId % 10) + ":" + chatId);
   } catch {}
 };
 
 const removeChat = async (chatId) => {
   try {
-    await (await useCclient()).destroy(
+    await (
+      await useCclient()
+    ).destroy(
       "chatid" + Math.abs(chatId % 10) + ":" + chatId,
       (
-        await (await useCclient()).get("chatid" + Math.abs(chatId % 10) + ":" + chatId)
+        await (
+          await useCclient()
+        ).get("chatid" + Math.abs(chatId % 10) + ":" + chatId)
       )._rev
     );
   } catch {}
@@ -129,20 +136,22 @@ const currentRate = () => {
   }
 };
 
-const sendMessageToChat = (token, chat_id, text) => {
-  return request({
-    json: true,
-    method: "GET",
-    url:
-      "https://api.telegram.org/bot" +
-      token +
-      "/sendMessage?" +
-      new URLSearchParams({
-        chat_id,
-        text,
-      }),
-    followRedirect: true,
-  });
+const sendMessageToChat = async (token, chat_id, text) => {
+  try {
+    await request({
+      json: true,
+      method: "GET",
+      url:
+        "https://api.telegram.org/bot" +
+        token +
+        "/sendMessage?" +
+        new URLSearchParams({
+          chat_id,
+          text,
+        }),
+      followRedirect: true,
+    });
+  } catch {}
 };
 
 const processAction = async (msg, token) => {
@@ -161,10 +170,16 @@ const processAction = async (msg, token) => {
   }
 };
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function main(params) {
   if (params.intoken !== params.webhookToken) {
     return;
   }
+
+  gparams = params;
 
   if (params.message) {
     await processAction(params.message, params.token);
@@ -174,14 +189,21 @@ async function main(params) {
     const currentR = currentRate();
 
     if (lastRate !== currentR) {
-      await (await useCclient()).insert(
-        { lastRate: currentR, _rev: (await (await useCclient()).get("next:lastRate"))._rev },
+      await (
+        await useCclient()
+      ).insert(
+        {
+          lastRate: currentR,
+          _rev: (await (await useCclient()).get("next:lastRate"))._rev,
+        },
         "next:lastRate"
       );
       for (let i = 0; i < 10; i++) {
         await Promise.all(
           (
-            await (await useCclient()).partitionedList("chatid" + i, { include_docs: true })
+            await (
+              await useCclient()
+            ).partitionedList("chatid" + i, { include_docs: true })
           ).rows.map(
             async (row) =>
               await sendMessageToChat(
@@ -191,6 +213,7 @@ async function main(params) {
               )
           )
         );
+        await sleep(2000);
       }
     }
   }
